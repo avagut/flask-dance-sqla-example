@@ -24,3 +24,5 @@ from app_folder.auth.views import github_blueprint
 # register the blueprints
 app.register_blueprint(users_blueprint)
 app.register_blueprint(github_blueprint, url_prefix="/login")
+
+

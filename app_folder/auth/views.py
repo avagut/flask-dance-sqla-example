@@ -14,10 +14,11 @@ from flask_login import (
 from app_folder import app, db
 from . import models
 
+
 users_blueprint = Blueprint('auth', __name__, template_folder='templates')
 github_blueprint = make_github_blueprint(
-    client_id="61727a7e31e009cc3a39",
-    client_secret="a8e28de3d4930fd9d62c3adcaf48560f414bee76",
+    client_id=app.config.get('GITHUB_ID'),
+    client_secret=app.config.get('GITHUB_SECRET'),
 )
 
 # setup SQLAlchemy backend
