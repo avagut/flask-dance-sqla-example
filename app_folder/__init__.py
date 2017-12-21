@@ -27,9 +27,11 @@ from app_folder.auth.views import users_blueprint
 from app_folder.auth.views import github_blueprint
 from app_folder.auth.views import google_blueprint
 from app_folder.auth.views import twitter_blueprint
+from app_folder.auth.views import facebook_blueprint
 
 # register the blueprints
 app.register_blueprint(users_blueprint)
 app.register_blueprint(github_blueprint, url_prefix="/login")
 app.register_blueprint(google_blueprint, url_prefix="/login")
-app.register_blueprint(twitter_blueprint, url_prefix='/twitter_login')
+app.register_blueprint(twitter_blueprint, url_prefix='/login')
+app.register_blueprint(facebook_blueprint, url_prefix='/login')

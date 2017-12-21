@@ -4,7 +4,8 @@ from flask import redirect, url_for, flash, render_template, Blueprint
 from sqlalchemy.orm.exc import NoResultFound
 from flask_dance.contrib.github import make_github_blueprint
 from flask_dance.contrib.google import make_google_blueprint
-from flask_dance.contrib.twitter import make_twitter_blueprint, twitter
+from flask_dance.contrib.twitter import make_twitter_blueprint
+from flask_dance.contrib.facebook import make_facebook_blueprint
 from flask_dance.consumer.backend.sqla import SQLAlchemyBackend
 from flask_dance.consumer import oauth_authorized, oauth_error
 from flask_login import (current_user, login_required, login_user, logout_user)
@@ -24,10 +25,14 @@ google_blueprint = make_google_blueprint(
 )
 
 twitter_blueprint = make_twitter_blueprint(
-    api_key="4rBQP1r4iP2oPRFpHfRY5ofd1",
-    api_secret="3Bdf5kVIlHUZSmQDWuuKT0DyiAaOreiAN95mRFqQ64JssiSgnH",
+    api_key=app.config.get('TWITTER_API_KEY'),
+    api_secret=app.config.get('TWITTER_API_SECRET')
 )
 
+facebook_blueprint = make_facebook_blueprint(
+    client_id=app.config.get('FACEBOOK_APP_ID'),
+    client_secret=app.config.get('FACEBOOK_APP_SECRET')
+)
 
 # setup SQLAlchemy backend
 github_blueprint.backend = SQLAlchemyBackend(models.OAuth, db.session,
@@ -35,7 +40,9 @@ github_blueprint.backend = SQLAlchemyBackend(models.OAuth, db.session,
 google_blueprint.backend = SQLAlchemyBackend(models.OAuth, db.session,
                                              user=current_user)
 twitter_blueprint.backend = SQLAlchemyBackend(models.OAuth, db.session,
-                                              user=current_user)
+                                              user=current_user, user_required=False)
+facebook_blueprint.backend = SQLAlchemyBackend(models.OAuth, db.session,
+                                               user=current_user)
 
 
 # create/login local user on successful OAuth login
@@ -43,10 +50,51 @@ twitter_blueprint.backend = SQLAlchemyBackend(models.OAuth, db.session,
 def github_logged_in(blueprint, token):
     """Log in user on successful Github authorization."""
     if not token:
-        flash("Failed to log in {name}".format(name=blueprint.name))
-        return
-    # figure out who the user is
+        flash("Failed to log in with GitHub.", category="error")
+        return False
     resp = blueprint.session.get("/user")
+    if not resp.ok:
+        msg = "Failed to fetch user info from GitHub."
+        flash(msg, category="error")
+        return False
+
+    github_info = resp.json()
+    github_user_id = str(github_info["id"])
+# Find this OAuth token in the database, or create it
+    query = models.OAuth.query.filter_by(
+        provider=blueprint.name,
+        provider_user_id=github_user_id,
+    )
+    try:
+        oauth = query.one()
+    except NoResultFound:
+        oauth = models.OAuth(
+            provider=blueprint.name,
+            provider_user_id=github_user_id,
+            token=token,
+        )
+
+    if oauth.user:
+        login_user(oauth.user)
+        flash("Successfully signed in with GitHub.")
+
+    else:
+        # Create a new local user account for this user
+        username = github_info["login"]
+        user = models.User(username=username)
+        # Associate the new local user account with the OAuth token
+        oauth.user = user
+        # Save and commit our database models
+        db.session.add_all([user, oauth])
+        db.session.commit()
+        # Log in the new local user account
+        login_user(user)
+        flash("Successfully signed in with GitHub.")
+
+    # Disable Flask-Dance's default behavior for saving the OAuth token
+    return False
+
+
     if resp.ok:
         username = resp.json()["login"]
         query = models.User.query.filter_by(username=username)
@@ -174,6 +222,49 @@ def twitter_error(blueprint, error, error_description=None,
     flash(msg, category="error")
 
 
+# create/login local user on successful OAuth login
+@oauth_authorized.connect_via(facebook_blueprint)
+def facebook_logged_in(blueprint, token):
+    """Log in user on successful Github authorization."""
+    if not token:
+        flash("Failed to log in {name}".format(name=blueprint.name))
+        return
+    # figure out who the user is
+    resp = blueprint.session.get("/me")
+    if resp.ok:
+        username = resp.json()["name"]
+        query = models.User.query.filter_by(username=username)
+        try:
+            user = query.one()
+        except NoResultFound:
+            # create a user
+            user = models.User(username=username)
+            db.session.add(user)
+            db.session.commit()
+        login_user(user)
+        flash("Successfully signed in with Facebook")
+    else:
+        msg = "Failed to fetch user info from {name}".format(
+              name=blueprint.name)
+        flash(msg, category="error")
+
+
+# notify on OAuth provider error
+@oauth_error.connect_via(facebook_blueprint)
+def facebook_error(blueprint, error, error_description=None, error_uri=None):
+    """Throw error on authentication failure from Github."""
+    msg = (
+        "OAuth error from {name}! "
+        "error={error} description={description} uri={uri}"
+    ).format(
+        name=blueprint.name,
+        error=error,
+        description=error_description,
+        uri=error_uri,
+    )
+    flash(msg, category="error")
+
+
 @users_blueprint.route('/logout')
 @login_required
 def logout():
@@ -193,14 +284,3 @@ def home():
 def login():
     """Create default route for unauthenticated redirect."""
     return render_template("home.html")
-
-
-@users_blueprint.route('/twitter')
-def twitter_login():
-    if not twitter.authorized:
-        return redirect(url_for('twitter.login'))
-
-    account_info = twitter.get('account/settings.json')
-    account_info_json = account_info.json()
-
-    return '<h1>Your Twitter name is @{}'.format(account_info_json['screen_name'])

@@ -12,3 +12,6 @@ GITHUB_SECRET = 'github secret'
 
 TWITTER_API_KEY = 'twitter api key'
 TWITTER_API_SECRET = 'twitter api secret'
+
+FACEBOOK_APP_ID = 'facebook app id'
+FACEBOOK_APP_SECRET = 'facebook app secret'
