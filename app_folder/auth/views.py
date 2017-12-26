@@ -57,7 +57,6 @@ def github_logged_in(blueprint, token):
         msg = "Failed to fetch user info from GitHub."
         flash(msg, category="error")
         return False
-
     github_info = resp.json()
     github_user_id = str(github_info["id"])
 # Find this OAuth token in the database, or create it
@@ -90,27 +89,9 @@ def github_logged_in(blueprint, token):
         # Log in the new local user account
         login_user(user)
         flash("Successfully signed in with GitHub.")
-
     # Disable Flask-Dance's default behavior for saving the OAuth token
-    return False
-
-
-    if resp.ok:
-        username = resp.json()["login"]
-        query = models.User.query.filter_by(username=username)
-        try:
-            user = query.one()
-        except NoResultFound:
-            # create a user
-            user = models.User(username=username)
-            db.session.add(user)
-            db.session.commit()
-        login_user(user)
-        flash("Successfully signed in with GitHub")
-    else:
-        msg = "Failed to fetch user info from {name}".format(
-              name=blueprint.name)
-        flash(msg, category="error")
+    # return False
+    return redirect(url_for("auth.home"))
 
 
 # notify on OAuth provider error
@@ -137,26 +118,47 @@ def google_logged_in(blueprint, token):
     if not token:
         flash("Failed to log in {name}".format(name=blueprint.name))
         return
-    # figure out who the user is
-    # resp = blueprint.session.get("/plus/v1/people/me")
     resp = blueprint.session.get("/oauth2/v2/userinfo")
-    if resp.ok:
-        # print(resp.json())
-        username = resp.json()["email"]
-        query = models.User.query.filter_by(username=username)
-        try:
-            user = query.one()
-        except NoResultFound:
-            # create a user
-            user = models.User(username=username)
-            db.session.add(user)
-            db.session.commit()
-        login_user(user)
-        flash("Successfully signed in with Google")
-    else:
-        msg = "Failed to fetch user info from {name}".format(
-              name=blueprint.name)
+    if not resp.ok:
+        msg = "Failed to fetch user info from GitHub."
         flash(msg, category="error")
+        return False
+
+    user_info = resp.json()
+    user_id = str(user_info["id"])
+# Find this OAuth token in the database, or create it
+    query = models.OAuth.query.filter_by(
+        provider=blueprint.name,
+        provider_user_id=user_id,
+    )
+    try:
+        oauth = query.one()
+    except NoResultFound:
+        oauth = models.OAuth(
+            provider=blueprint.name,
+            provider_user_id=user_id,
+            token=token,
+        )
+
+    if oauth.user:
+        login_user(oauth.user)
+        flash("Successfully signed in with Google.")
+
+    else:
+        # Create a new local user account for this user
+        username = user_info["email"]
+        user = models.User(username=username)
+        # Associate the new local user account with the OAuth token
+        oauth.user = user
+        # Save and commit our database models
+        db.session.add_all([user, oauth])
+        db.session.commit()
+        # Log in the new local user account
+        login_user(user)
+        flash("Successfully signed in with Google.")
+    # Disable Flask-Dance's default behavior for saving the OAuth token
+    # return False
+    return redirect(url_for("auth.home"))
 
 
 # notify on OAuth provider error
@@ -183,26 +185,46 @@ def twitter_logged_in(blueprint, token):
     if not token:
         flash("Failed to log in {name}".format(name=blueprint.name))
         return
-    # figure out who the user is
-    # resp = blueprint.session.get("/plus/v1/people/me")
     resp = blueprint.session.get('account/settings.json')
-    if resp.ok:
-        # print(resp.json())
-        username = resp.json()['screen_name']
-        query = models.User.query.filter_by(username=username)
-        try:
-            user = query.one()
-        except NoResultFound:
-            # create a user
-            user = models.User(username=username)
-            db.session.add(user)
-            db.session.commit()
-        login_user(user)
-        flash("Successfully signed in with Twitter")
-    else:
-        msg = "Failed to fetch user info from {name}".format(
-              name=blueprint.name)
+    if not resp.ok:
+        msg = "Failed to fetch user info from Twitter."
         flash(msg, category="error")
+        return False
+    user_info = resp.json()
+    print(type(token))
+    user_id = str(token["user_id"])
+# Find this OAuth token in the database, or create it
+    query = models.OAuth.query.filter_by(
+        provider=blueprint.name,
+        provider_user_id=user_id,
+    )
+    try:
+        oauth = query.one()
+    except NoResultFound:
+        oauth = models.OAuth(
+            provider=blueprint.name,
+            provider_user_id=user_id,
+            token=token,
+        )
+    if oauth.user:
+        login_user(oauth.user)
+        flash("Successfully signed in with Twitter.")
+
+    else:
+        # Create a new local user account for this user
+        username = user_info["screen_name"]
+        user = models.User(username=username)
+        # Associate the new local user account with the OAuth token
+        oauth.user = user
+        # Save and commit our database models
+        db.session.add_all([user, oauth])
+        db.session.commit()
+        # Log in the new local user account
+        login_user(user)
+        flash("Successfully signed in with Twitter.")
+    # Disable Flask-Dance's default behavior for saving the OAuth token
+    # return False
+    return redirect(url_for("auth.home"))
 
 
 # notify on OAuth provider error
@@ -247,6 +269,7 @@ def facebook_logged_in(blueprint, token):
         msg = "Failed to fetch user info from {name}".format(
               name=blueprint.name)
         flash(msg, category="error")
+    return redirect(url_for("auth.home"))
 
 
 # notify on OAuth provider error
@@ -277,10 +300,10 @@ def logout():
 @login_required
 def home():
     """Test page for fully authenticated user."""
-    return 'The current user is ' + current_user.username
+    return render_template("logged_in.html")
 
 
 @users_blueprint.route("/")
 def login():
     """Create default route for unauthenticated redirect."""
-    return render_template("home.html")
+    return render_template("login.html")

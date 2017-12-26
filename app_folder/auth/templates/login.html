@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Login Page</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/assets/css/bootstrap.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/assets/css/font-awesome.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/assets/css/docs.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-social.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            <p id="login_cta">
+                Login Into Your Account
+            </p>
+            <div class="left">
+                <div class = 'social_buttons_group'>
+                    <a href="{{ url_for("facebook.login") }}"
+                    class="btn btn-block btn-lg btn-facebook btn-social "><span class="fa fa-facebook"></span>
+                    <b>Sign in with Facebook</b></a>
+                    <a class="btn btn-block btn-lg  btn-google btn-social "
+                    href="{{ url_for("google.login") }}">
+                        <span class="fa fa-google"></span>
+                        <b>Sign in with Google</b></a>
+                    <a href="{{ url_for("twitter.login") }}"
+                     class="btn btn-block btn-lg  btn-twitter btn-social "><span class="fa fa-twitter"></span>
+                      <b>Sign in with Twitter</b></a>
+                    <a class="btn btn-block btn-lg  btn-github btn-social "
+                        href="{{ url_for("github.login") }}">
+                        <span class="fa fa-github"></span>
+                        <b>Sign in with Github</b>             </a>
+                    </br>
+                </div>
+            </div>
+            <div class="right">
+                <div id="login-form">
+                    <form>
+                        <div class="form-group">
+                            <label class="login-input-label" for="username-input">USERNAME</label>
+                            <input type="text" class="form-control" id="username-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="login-input-label" for="password-input">PASSWORD</label>
+                            <input type="password" class="form-control" id="password-input" >
+                        </div>
+                        <button id="login-btn" type="submit"
+                                class="btn btn-block btn-success">
+                                <b>Login</b>
+                        </button>
+                        <div class="login-other-actions">
+                            <label style="float:left;">
+                                <input type="checkbox" name="checkbox" checked><i></i>Remember me
+                            </label>
+                            <a style="float:right;"  id="forgot-password" href="#">Forgot Password?</a>
+                        </div>
+                        <br /><br />
+                        <h5><a style="text-align: center;" href="#"><b>Don't have an account? Sign Up!</b></a></h5>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,74 @@
+body {
+    font-family: Sans-Serif;
+    background: #eee;
+}
+.container {
+    background: white;
+	width:60%;
+	height: 400px;
+	margin: 0 auto;
+    margin-top: 80px;
+    border-radius: 25px;
+}
+.container .left{
+    margin-top: 25px;
+    float:left;
+    width: 50%;
+    height: 300px;
+    border-right:2px solid #eee;
+    padding: 25px;
+    padding-top: 15px;
+    margin-bottom: 50px;
+}
+.social_buttons_group{
+    margin-top: 10px;
+    width: 90%;
+    margin: 0 auto;
+}
+.container .right{
+    margin-top: 4px;
+    float:right;
+    width: 50%;
+    height: 300px;
+    padding: 25px;
+    padding-right: 35px;
+    padding-top: 15px;
+    margin-bottom: 50px;
+}
+#login_cta{
+    margin-top: 50px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 18pt;
+}
+#login-form{
+    margin-top: 10px;
+    width: 95%;
+    margin: 0 auto;
+}
+input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0px 1000px white inset;
+}
+#login-btn{
+    font-family: Sans-Serif;
+    font-weight: bold;
+    font-size: 12pt;
+}
+.form-field{
+    display: block;
+}
+.form-control{
+    font-size: 11pt;
+}
+.login-input-label{
+    font-weight: bold;
+    font-size: 13pt;
+}
+#forgot-password{
+    font-family: Sans-Serif;
+    font-weight: bold;
+    font-size: 11pt;
+}
+.login-other-actions{
+    margin-top: 20px;
+}
